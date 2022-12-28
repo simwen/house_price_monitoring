@@ -16,7 +16,7 @@ from matplotlib import ticker
 # file naming variables
 today = date.today()
 last_version = today - timedelta(days=7)
-location = '/Users/Sim/Documents/Other/Programming/Personal Projects/Property Price Monitor'
+location = '/Users/Sim/Documents/Other/Programming/Personal Projects/house_price_monitoring'
 
 # Load last week's data
 df = pd.read_csv(f'{location}/data/df_{last_version}.csv')
@@ -45,7 +45,7 @@ price and featured property status of each property
 **What areas?**
 
 5 relevant, non-overlapping areas defined by a 1 mile (or 0.5 mile) radius around the 
-following tube stations (also see screenshot below):
+following tube stations:
 - Kentish Town (1 mile)
 - Royal Oak (1 mile)
 - Finchley Road (1 mile)
@@ -64,7 +64,7 @@ I specify that properties must:
 
 The first scraper loops through the 4 stations with 1mile radii. Due to the much lower 
 number of properties in 0.5 miles around Mornington Crescent, results rarely go onto a 
-second page meaning. Therefore I simply created a specific scraping code for it.
+second page. Therefore I simply created a specific scraping code for it.
 """
 
 # call the scraping func
