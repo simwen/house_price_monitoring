@@ -127,3 +127,32 @@ plt.ylim([min(df2['Median Price'])-40000, max(df2['Median Price'])+40000])
 # Save to .png
 plt.savefig(f'{location}/charts/{today}_medians.png')
 #plt.show()
+
+# Plotting functions
+def plot(stat = "Median", incl_percentiles = False, incl_CI80 = False, start = "2022-11-06", end = "2024-11-06"):
+    df3 = df2[(df2['Date']>=start) & (df2['Date']<=end)]
+    fig, ax = plt.subplots()
+    
+    # plot points  
+    ax.plot(df3['Date'].apply(lambda x: x.strftime('%d/%m')),df3[f'{stat} Price'], ".", color = 'b')
+    
+    # add error bars
+    yerr = np.transpose(np.array(df3[['CI_upp']]))
+    if incl_CI80 == True: 
+        ax.errorbar(df3['Date'].apply(lambda x: x.strftime('%d/%m')),df3[f'{stat} Price'], yerr=yerr, alpha = 0.5)
+    
+    # plot lines
+    ax.plot(df3['Date'].apply(lambda x: x.strftime('%d/%m')),df3[f'{stat} Price'], color = 'b')
+
+    # formatting
+    ax.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: '£{:,}'.format(int(x), ',')))
+    ax.yaxis.set_tick_params(which='major', labelcolor='black',labelleft=True)
+
+    plt.ylabel(f'{stat} Price')
+    plt.xlabel('Date')
+    plt.ylim([min(df3[f'{stat} Price'])- np.amax(yerr), max(df3[f'{stat} Price'])+np.amax(yerr)])
+
+# Testing
+plot(stat = "Median", start = '2022-11-01', incl_CI80 = True)
+
+
