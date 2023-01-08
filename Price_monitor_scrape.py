@@ -6,37 +6,31 @@ Created on Sun Nov  6 13:16:38 2022
 @author: Sim
 """
 
+## Set up --------------------------------------------------------------------
 import pandas as pd
 import numpy as np
 from datetime import date, datetime, timedelta
 import matplotlib
 from matplotlib import pyplot as plt
-from matplotlib import ticker
 
 # file naming variables
 today = date.today()
 last_version = today - timedelta(days=7)
 location = '/Users/Sim/Documents/Other/Programming/Personal Projects/house_price_monitoring'
+#location2 = '/Users/Sim/Documents/Other/Programming/Personal Projects/house_price_monitoring/test'
 
-# Load last week's data
-df = pd.read_csv(f'{location}/data/df_{last_version}.csv')
-df = df.drop('Unnamed: 0', axis=1)
+# Load last week's data (full data and summary stats)
+summary_df = pd.read_csv(f'{location}/data/summary_df_{last_version}.csv')
+full_df = pd.read_csv(f'{location}/data/full_df_{last_version}.csv')
 
-# create empty dataframe for new data
-df2 = pd.DataFrame(
-    {"Date": [],
-     "Average Price": [],
-     "Median Price": [],
-     "10th Percentile": [],
-     "90th Percentile": [],
-     "Std dev": [],
-     "Sample Size": []
-    })
+summary_df = summary_df.drop('Unnamed: 0', axis=1)
+full_df = full_df.drop('Unnamed: 0', axis=1)
 
+
+## Scraping ------------------------------------------------------------------
 # import the scraping functions
 from Monitor_funcs import scrape_results_page
 
-### Scraper
 """
 The scraper Loops through rightmove results pages of 5 London areas extracting link, 
 price and featured property status of each property
@@ -73,6 +67,8 @@ date_time = scrape_results_page()[2]
 prices = scrape_results_page()[3]
 featured = scrape_results_page()[4]
 
+
+## Data wrangling ------------------------------------------------------------
 # create date_time vars for the df
 date_time = pd.to_datetime(date_time,dayfirst = True, format = "%d/%m/%Y %H:%M")
 dates = date_time.date
@@ -84,75 +80,116 @@ data = {"Links": links,
         "Price": prices,
         "Featured": featured,
        }
-df3 = pd.DataFrame.from_dict(data)
+full_df2 = pd.DataFrame.from_dict(data)
 
 # Remove featured properties
-df3 = df3[df3.Featured != 1]
+full_df2 = full_df2[full_df2.Featured != 1]
 
 # Sampling 120 rows
-df3=df3.sample(n = min(120,len(df3)))
+full_df2 = full_df2.sample(n = min(120,len(full_df2)))
+latest_scrape_sample = len(full_df2)
+
+# Adding time variables
+full_df2['Date'] = pd.to_datetime(full_df2['DateScraped'])
+full_df2['Year'] = full_df2['Date'].dt.strftime('%Y')
+full_df2['Month'] = full_df2['Date'].dt.strftime('%m')
+full_df2['MonthYear'] = full_df2['Date'].dt.strftime('%Y-%m')
+full_df2['WeekNo'] = full_df2['Date'].dt.strftime('%U')
+full_df2['Fortnight'] = (full_df2['WeekNo'].astype(int) +1)//2
+
+full_df2['Date'] = full_df2.Date.dt.strftime("%Y-%m-%d")
+
+# Combine this week's data with past weeks' full data
+full_df2 = pd.concat([full_df, full_df2]).reset_index(drop=True)
 
 # Save full scrape to csv
-df3.to_csv(f'{location}/data/full_df_{today}.csv') 
+full_df2.to_csv(f'{location}/data/full_df_{today}.csv') 
 
-# Key scrape info
-date = datetime.strptime(str(df3.loc[2,'DateScraped']), "%Y-%m-%d").strftime("%d/%m/%Y")
-avg_price, n = round(np.mean(df3['Price']),2), len(df3)
-median_price, ten  = round(np.median(df3['Price']),2), round(np.percentile(df3['Price'], 10),2)
-ninety, st_dev = round(np.percentile(df3['Price'], 90),2), round(np.std(df3['Price']),3)
+#full_df2['Fortnight2'] = full_df2['Fortnight'].apply('str')
+#m = full_df2['Fortnight2'].str.len().max()
+#full_df2['Fortnight2'] = full_df2['Fortnight2'].str.rjust(m,'0')
 
-# Key info df
-df2.loc[len(df2)] = [date, avg_price, median_price, ten, ninety, st_dev, n]
+#full_df2['Fortnight2'] = '0' + full_df2['Fortnight2'].astype(str)
 
-# Combine this week's data with past weeks'
-df2 = pd.concat([df, df2]).reset_index(drop=True)
 
-# Save aggregate data to csv
-df2.to_csv(f'{location}/data/df_{today}.csv')
+## Summary stats -------------------------------------------------------------
+# For summary stats df, first create empty dataframe for new data
+summary_df2 = pd.DataFrame(
+    {"Date": [],
+     "Average Price": [],
+     "Median Price": [],
+     "10th Percentile": [],
+     "90th Percentile": [],
+     "Std dev": [],
+     "Sample Size": []
+    })
 
-# Plotting chart
-fig, ax = plt.subplots()
-ax.plot(df2['Date'],df2['Median Price'])
+# Summary stats: Next get the new summary stats from scrape
+date = datetime.strptime(str(full_df2.loc[len(full_df2)-1,'DateScraped']), "%Y-%m-%d").strftime("%d/%m/%Y")
+avg_price, n = round(np.mean(full_df2['Price']),2), latest_scrape_sample
+median_price, ten  = round(np.median(full_df2['Price']),2), round(np.percentile(full_df2['Price'], 10),2)
+ninety, st_dev = round(np.percentile(full_df2['Price'], 90),2), round(np.std(full_df2['Price']),3)
 
-# Using automatic StrMethodFormatter
-ax.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: '£{:,}'.format(int(x), ',')))
-ax.yaxis.set_tick_params(which='major', labelcolor='black',labelleft=True)
-ax.plot(df2['Date'],df2['Median Price'], ".", color = 'b')
+# Combine and save new summary stats data
+summary_df2.loc[len(summary_df2)] = [date, avg_price, median_price, ten, ninety, st_dev, n]
+summary_df2 = pd.concat([summary_df, summary_df2]).reset_index(drop=True) # Combine this week's data with past weeks'
+summary_df2.to_csv(f'{location}/data/summary_df_{today}.csv') # Save summary df to csv
 
-# Formatting axis
-plt.ylabel('Median Price')
-plt.xlabel('Date')
-plt.ylim([min(df2['Median Price'])-40000, max(df2['Median Price'])+40000])
 
-# Save to .png
-plt.savefig(f'{location}/charts/{today}_medians.png')
-#plt.show()
-
+## Creating charts -----------------------------------------------------------
 # Plotting functions
-def plot(stat = "Median", incl_percentiles = False, incl_CI80 = False, start = "2022-11-06", end = "2024-11-06"):
-    df3 = df2[(df2['Date']>=start) & (df2['Date']<=end)]
+def plot(interval = "Month", stat = "median", incl_CI90 = False, start = "2022-11-06", end = "2024-11-06", save_fig = False):
+    full_df3 = full_df2[(full_df2['Date']>=start) & (full_df2['Date']<=end)]
+    full_df3 = full_df3.groupby(f'{interval}').agg({'Price': ['mean', 'median', 'std', 'count']})
+    full_df3 = full_df3.reset_index()
+    
+    full_df3['90_CI'] = 1.645*(full_df3['Price']['std']/full_df3['Price']['count']**0.5)
+
     fig, ax = plt.subplots()
     
-    # plot points  
-    ax.plot(df3['Date'].apply(lambda x: x.strftime('%d/%m')),df3[f'{stat} Price'], ".", color = 'b')
-    
-    # add error bars
-    yerr = np.transpose(np.array(df3[['CI_upp']]))
-    if incl_CI80 == True: 
-        ax.errorbar(df3['Date'].apply(lambda x: x.strftime('%d/%m')),df3[f'{stat} Price'], yerr=yerr, alpha = 0.5)
-    
-    # plot lines
-    ax.plot(df3['Date'].apply(lambda x: x.strftime('%d/%m')),df3[f'{stat} Price'], color = 'b')
+    # plot points     
+    if interval == "Date":
+        full_df3[f'{interval}'] = pd.to_datetime(full_df3[f'{interval}'])
+        ax.plot(full_df3[f'{interval}'].apply(lambda x: x.strftime('%d/%m')),full_df3['Price'][f'{stat}'], ".", color = 'b')
+
+        # add error bars
+        yerr = np.transpose(np.array(full_df3[['90_CI']]))
+        if incl_CI90 == True: 
+            ax.errorbar(full_df3[f'{interval}'].apply(lambda x: x.strftime('%d/%m')),full_df3['Price'][f'{stat}'], yerr=yerr, alpha = 0.5)
+
+        # plot lines
+        ax.plot(full_df3[f'{interval}'].apply(lambda x: x.strftime('%d/%m')),full_df3['Price'][f'{stat}'], color = 'b')
+
+    else:
+        ax.plot(full_df3[f'{interval}'].astype(str),full_df3['Price'][f'{stat}'], ".", color = 'b')
+        
+        # add error bars
+        yerr = np.transpose(np.array(full_df3[['90_CI']]))
+        if incl_CI90 == True: 
+            ax.errorbar(full_df3[f'{interval}'].astype(str),full_df3['Price'][f'{stat}'], yerr=yerr, alpha = 0.5)
+
+        # plot lines
+        ax.plot(full_df3[f'{interval}'].astype(str),full_df3['Price'][f'{stat}'], color = 'b')
+        
 
     # formatting
     ax.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: '£{:,}'.format(int(x), ',')))
     ax.yaxis.set_tick_params(which='major', labelcolor='black',labelleft=True)
 
-    plt.ylabel(f'{stat} Price')
-    plt.xlabel('Date')
-    plt.ylim([min(df3[f'{stat} Price'])- np.amax(yerr), max(df3[f'{stat} Price'])+np.amax(yerr)])
+    plt.ylabel(f'{stat} price')
+    plt.xlabel(f'{interval}')
+    plt.ylim([min(full_df3['Price'][f'{stat}'])- np.amax(yerr), max(full_df3['Price'][f'{stat}'])+np.amax(yerr)])
+    
+    if save_fig == True:
+        plt.savefig(f'{location}/charts/{today}_{interval}_{stat}.png')
 
-# Testing
-plot(stat = "Median", start = '2022-11-01', incl_CI80 = True)
+# Possible intervals: 'Date', 'Year', 'Month', 'MonthYear', 'WeekNo', 'Fortnight'
+plot(interval = "Date", stat = "median", incl_CI90 = False, save_fig = True)
+
+plot(interval = "WeekNo", stat = "median", incl_CI90 = False, save_fig = False)
+
+
+# Works: 'Date', Year, Month, WeekNo, MonthYear,
+# Doesn't: 'Fortnight'
 
 
