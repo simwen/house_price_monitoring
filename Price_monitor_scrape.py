@@ -186,7 +186,7 @@ def plot(interval = "Month", stat = "median", incl_CI90 = False, start = "2022-1
 # Possible intervals: 'Date', 'Year', 'Month', 'MonthYear', 'WeekNo', 'Fortnight'
 plot(interval = "Date", stat = "median", incl_CI90 = False, save_fig = True)
 
-plot(interval = "WeekNo", stat = "median", incl_CI90 = False, save_fig = False)
+plot(interval = "Date", stat = "median", incl_CI90 = False, save_fig = False)
 
 
 # Works: 'Date', Year, Month, WeekNo, MonthYear,
