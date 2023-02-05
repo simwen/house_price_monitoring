@@ -1,0 +1,6 @@
+.DS_Store
+old
+test
+.Rhistory
+.ipynb_checkpoints
+__pycache__
