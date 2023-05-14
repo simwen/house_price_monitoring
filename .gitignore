@@ -4,3 +4,4 @@ test
 .Rhistory
 .ipynb_checkpoints
 __pycache__
+Price_monitor_scrape_test.py
