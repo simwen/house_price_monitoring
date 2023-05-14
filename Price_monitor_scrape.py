@@ -29,6 +29,10 @@ full_df = full_df.drop('Unnamed: 0', axis=1)
 
 ## Scraping ------------------------------------------------------------------
 # import the scraping functions
+import sys 
+import os
+sys.path.append(os.path.abspath('/Users/Sim/Documents/Other/Programming/Personal Projects/house_price_monitoring'))
+
 from Monitor_funcs import scrape_results_page
 
 """
@@ -80,37 +84,30 @@ data = {"Links": links,
         "Price": prices,
         "Featured": featured,
        }
-full_df2 = pd.DataFrame.from_dict(data)
+full_df_new = pd.DataFrame.from_dict(data)
 
 # Remove featured properties
-full_df2 = full_df2[full_df2.Featured != 1]
+full_df_new = full_df_new[full_df_new.Featured != 1]
 
 # Sampling 120 rows
-full_df2 = full_df2.sample(n = min(120,len(full_df2)))
-latest_scrape_sample = len(full_df2)
+full_df_new = full_df_new.sample(n = min(120,len(full_df_new)))
+latest_scrape_sample = len(full_df_new)
 
 # Adding time variables
-full_df2['Date'] = pd.to_datetime(full_df2['DateScraped'])
-full_df2['Year'] = full_df2['Date'].dt.strftime('%Y')
-full_df2['Month'] = full_df2['Date'].dt.strftime('%m')
-full_df2['MonthYear'] = full_df2['Date'].dt.strftime('%Y-%m')
-full_df2['WeekNo'] = full_df2['Date'].dt.strftime('%U')
-full_df2['Fortnight'] = (full_df2['WeekNo'].astype(int) +1)//2
+full_df_new['Date'] = pd.to_datetime(full_df_new['DateScraped'])
+full_df_new['Year'] = full_df_new['Date'].dt.strftime('%Y')
+full_df_new['Month'] = full_df_new['Date'].dt.strftime('%m')
+full_df_new['MonthYear'] = full_df_new['Date'].dt.strftime('%Y-%m')
+full_df_new['WeekNo'] = full_df_new['Date'].dt.strftime('%U')
+full_df_new['Fortnight'] = (full_df_new['WeekNo'].astype(int) +1)//2
 
-full_df2['Date'] = full_df2.Date.dt.strftime("%Y-%m-%d")
+full_df_new['Date'] = full_df_new.Date.dt.strftime("%Y-%m-%d")
 
 # Combine this week's data with past weeks' full data
-full_df2 = pd.concat([full_df, full_df2]).reset_index(drop=True)
+full_df = pd.concat([full_df, full_df_new]).reset_index(drop=True)
 
 # Save full scrape to csv
-full_df2.to_csv(f'{location}/data/full_df_{today}.csv') 
-
-#full_df2['Fortnight2'] = full_df2['Fortnight'].apply('str')
-#m = full_df2['Fortnight2'].str.len().max()
-#full_df2['Fortnight2'] = full_df2['Fortnight2'].str.rjust(m,'0')
-
-#full_df2['Fortnight2'] = '0' + full_df2['Fortnight2'].astype(str)
-
+full_df.to_csv(f'{location}/data/full_df_{today}.csv') 
 
 ## Summary stats -------------------------------------------------------------
 # For summary stats df, first create empty dataframe for new data
@@ -125,10 +122,10 @@ summary_df2 = pd.DataFrame(
     })
 
 # Summary stats: Next get the new summary stats from scrape
-date = datetime.strptime(str(full_df2.loc[len(full_df2)-1,'DateScraped']), "%Y-%m-%d").strftime("%d/%m/%Y")
-avg_price, n = round(np.mean(full_df2['Price']),2), latest_scrape_sample
-median_price, ten  = round(np.median(full_df2['Price']),2), round(np.percentile(full_df2['Price'], 10),2)
-ninety, st_dev = round(np.percentile(full_df2['Price'], 90),2), round(np.std(full_df2['Price']),3)
+date = datetime.strptime(str(full_df_new.iloc[len(full_df_new)-1,2]), "%Y-%m-%d").strftime("%d/%m/%Y")  # extracts date (col no. 2) from last row of new df
+avg_price, n = round(np.mean(full_df_new['Price']),2), latest_scrape_sample
+median_price, ten  = round(np.median(full_df_new['Price']),2), round(np.percentile(full_df_new['Price'], 10),2)
+ninety, st_dev = round(np.percentile(full_df_new['Price'], 90),2), round(np.std(full_df_new['Price']),3)
 
 # Combine and save new summary stats data
 summary_df2.loc[len(summary_df2)] = [date, avg_price, median_price, ten, ninety, st_dev, n]
@@ -139,7 +136,7 @@ summary_df2.to_csv(f'{location}/data/summary_df_{today}.csv') # Save summary df 
 ## Creating charts -----------------------------------------------------------
 # Plotting functions
 def plot(interval = "Month", stat = "median", incl_CI90 = False, start = "2022-11-06", end = "2024-11-06", save_fig = False):
-    full_df3 = full_df2[(full_df2['Date']>=start) & (full_df2['Date']<=end)]
+    full_df3 = full_df[(full_df['Date']>=start) & (full_df['Date']<=end)]
     full_df3 = full_df3.groupby(f'{interval}').agg({'Price': ['mean', 'median', 'std', 'count']})
     full_df3 = full_df3.reset_index()
     
@@ -181,15 +178,15 @@ def plot(interval = "Month", stat = "median", incl_CI90 = False, start = "2022-1
     plt.ylim([min(full_df3['Price'][f'{stat}'])- np.amax(yerr), max(full_df3['Price'][f'{stat}'])+np.amax(yerr)])
     
     if save_fig == True:
-        plt.savefig(f'{location}/charts/{today}_{interval}_{stat}.png')
+        plt.savefig(f'{location}/charts/{interval}/{today}_{interval}_{stat}.png')
 
 # Possible intervals: 'Date', 'Year', 'Month', 'MonthYear', 'WeekNo', 'Fortnight'
 plot(interval = "Date", stat = "median", incl_CI90 = False, save_fig = True)
 
-plot(interval = "Date", stat = "median", incl_CI90 = False, save_fig = False)
+plot(interval = "MonthYear", stat = "median", incl_CI90 = False, save_fig = True)
 
 
-# Works: 'Date', Year, Month, WeekNo, MonthYear,
-# Doesn't: 'Fortnight'
+# Works: Date, Year, MonthYear
+# Doesn't: Fortnight, Month, WeekNo
 
 
