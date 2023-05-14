@@ -8,12 +8,9 @@ Created on Sun Nov  6 13:26:07 2022
 
 import requests
 from bs4 import BeautifulSoup
-import pandas as pd
 import time
 import numpy as np
-import re
-import json
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Scraping the rightmove property search results webpages 
 # Collates valid properties' weblinks, plus their price and id
