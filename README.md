@@ -1,7 +1,7 @@
 # house_price_monitoring
 
 ## Summary
-This project involves building a tool to monitor local property prices on UK property portal RightMove (https://www.rightmove.co.uk). The tool monitors prices on a weekly basis by scraping the RightMove website and charting prices however the user desires. One can calibrate the tool to monitor prices in any area of the UK, examples currently focus on two areas relevant to me (North Central London and a suburb of Sheffield).
+This project involves building a tool to monitor local property prices on UK property portal RightMove (https://www.rightmove.co.uk). The tool monitors prices on a weekly basis by scraping the RightMove website and charting prices however the user desires. One can calibrate the tool to monitor prices in any area of the UK, examples currently focus on the area relevant to me (North Central London).
 
 ## Motivation
 News outlets reporting on house prices and the state of the property market suffers from 2 problems:
