@@ -12,6 +12,7 @@ import numpy as np
 from datetime import date, datetime, timedelta
 import matplotlib
 from matplotlib import pyplot as plt
+import math
 
 # file naming variables
 today = date.today()
@@ -135,7 +136,7 @@ summary_df2.to_csv(f'{location}/data/summary_df_{today}.csv') # Save summary df 
 
 ## Creating charts -----------------------------------------------------------
 # Plotting functions
-def plot(interval = "Month", stat = "median", incl_CI90 = False, start = "2022-11-06", end = "2024-11-06", save_fig = False):
+def plot(interval = "Month", stat = "median", incl_trend = True, incl_CI90 = False, start = "2022-11-06", end = "2024-11-06", save_fig = False):
     full_df3 = full_df[(full_df['Date']>=start) & (full_df['Date']<=end)]
     full_df3 = full_df3.groupby(f'{interval}').agg({'Price': ['mean', 'median', 'std', 'count']})
     full_df3 = full_df3.reset_index()
@@ -148,6 +149,7 @@ def plot(interval = "Month", stat = "median", incl_CI90 = False, start = "2022-1
     if interval == "Date":
         full_df3[f'{interval}'] = pd.to_datetime(full_df3[f'{interval}'])
         ax.plot(full_df3[f'{interval}'].apply(lambda x: x.strftime('%d/%m')),full_df3['Price'][f'{stat}'], ".", color = 'b')
+        ax.set_xticks(ax.get_xticks()[::math.ceil(len(full_df3)/10)])
 
         # add error bars
         yerr = np.transpose(np.array(full_df3[['90_CI']]))
@@ -155,8 +157,9 @@ def plot(interval = "Month", stat = "median", incl_CI90 = False, start = "2022-1
             ax.errorbar(full_df3[f'{interval}'].apply(lambda x: x.strftime('%d/%m')),full_df3['Price'][f'{stat}'], yerr=yerr, alpha = 0.5)
 
         # plot lines
-        ax.plot(full_df3[f'{interval}'].apply(lambda x: x.strftime('%d/%m')),full_df3['Price'][f'{stat}'], color = 'b')
-
+        if incl_trend == False:
+            ax.plot(full_df3[f'{interval}'].apply(lambda x: x.strftime('%d/%m')),full_df3['Price'][f'{stat}'], color = 'b')
+    
     else:
         ax.plot(full_df3[f'{interval}'].astype(str),full_df3['Price'][f'{stat}'], ".", color = 'b')
         
@@ -166,8 +169,16 @@ def plot(interval = "Month", stat = "median", incl_CI90 = False, start = "2022-1
             ax.errorbar(full_df3[f'{interval}'].astype(str),full_df3['Price'][f'{stat}'], yerr=yerr, alpha = 0.5)
 
         # plot lines
-        ax.plot(full_df3[f'{interval}'].astype(str),full_df3['Price'][f'{stat}'], color = 'b')
+        if incl_trend == False:
+            ax.plot(full_df3[f'{interval}'].astype(str),full_df3['Price'][f'{stat}'], color = 'b')
         
+    # trend line
+    if incl_trend == True:
+        xaxis = list(range(len(full_df3)))
+        yaxis = list(full_df3['Price'][f'{stat}'])
+        model = np.poly1d(np.polyfit(xaxis, yaxis, 3))
+        polyline = np.linspace(0, len(full_df3)-1, 100)
+        ax.plot(polyline, model(polyline))
 
     # formatting
     ax.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: '£{:,}'.format(int(x), ',')))
@@ -178,12 +189,14 @@ def plot(interval = "Month", stat = "median", incl_CI90 = False, start = "2022-1
     plt.ylim([min(full_df3['Price'][f'{stat}'])- np.amax(yerr), max(full_df3['Price'][f'{stat}'])+np.amax(yerr)])
     
     if save_fig == True:
-        plt.savefig(f'{location}/charts/{interval}/{today}_{interval}_{stat}.png')
+        plt.savefig(f'{location}/charts/{interval}/{today}_{interval}_{stat}_trend_{incl_trend}.png')
 
 # Possible intervals: 'Date', 'Year', 'Month', 'MonthYear', 'WeekNo', 'Fortnight'
-plot(interval = "Date", stat = "median", incl_CI90 = False, save_fig = True)
+plot(interval = "Date", stat = "median", incl_trend=False, incl_CI90 = True, save_fig = True)
 
-plot(interval = "MonthYear", stat = "median", incl_CI90 = False, save_fig = True)
+plot(interval = "MonthYear", stat = "median", incl_trend=False, incl_CI90 = True, save_fig = True)
+
+plot(interval = "Date", stat = "mean", incl_CI90 = False, save_fig = False)
 
 
 # Works: Date, Year, MonthYear

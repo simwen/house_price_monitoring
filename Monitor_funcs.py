@@ -37,7 +37,7 @@ def scrape_results_page(min_beds=2,max_beds=2,radius=1,noPages=2,days_since_adde
                     except:
                         print(f'Connection refused by the server on page {i+1}... sleeping for 3 seconds')
                         time.sleep(3)
-                        print("Was a nice sleep, now let me continue...")
+                        print("My sleep was lovely, now let me continue...")
                         continue
 
             soup = BeautifulSoup(r.text, 'lxml')
