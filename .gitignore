@@ -6,3 +6,4 @@ test
 __pycache__
 Price_monitor_scrape_test.py
 testing.py
+testing_monitor_func.py
