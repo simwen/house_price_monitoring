@@ -170,18 +170,22 @@ def plot(interval = "Month", stat = "median", incl_trend = True, incl_CI90 = Fal
 
     plt.ylabel(f'{stat} price')
     plt.xlabel(f'{interval}')
-    plt.ylim([min(full_df3['Price'][f'{stat}'])- np.amax(yerr)+50000, max(full_df3['Price'][f'{stat}'])+np.amax(yerr)-50000])
-    
+    if interval == 'Date':
+        plt.ylim([min(full_df3['Price'][f'{stat}'])- np.amax(yerr)+50000, max(full_df3['Price'][f'{stat}'])+np.amax(yerr)-50000])
+    else: 
+        plt.ylim([min(full_df3['Price'][f'{stat}'])- np.amax(yerr), max(full_df3['Price'][f'{stat}'])+np.amax(yerr)])
+
     if save_fig == True:
         plt.savefig(f'{location}/charts/{interval}/{today}_{interval}_{stat}_trend_{incl_trend}.png')
 
 # Plot the data
 # Possible intervals: 'Date', 'Year', 'Month', 'MonthYear', 'WeekNo', 'Fortnight'
 plot(interval = "Date", stat = "median", incl_trend=True, incl_CI90 = False, save_fig = True)
-
 plot(interval = "MonthYear", stat = "median", incl_trend=False, incl_CI90 = False, save_fig = True)
 
-plot(interval = "Date", stat = "mean", incl_CI90 = False, save_fig = False)
+
+plot(interval = "MonthYear", stat = "median", incl_trend=False, incl_CI90 = False, save_fig = False)
+plot(interval = "Date", stat = "median", incl_trend=False, incl_CI90 = False, save_fig = False)
 
 
 # Works: Date, Year, MonthYear
