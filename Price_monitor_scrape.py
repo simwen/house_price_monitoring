@@ -51,11 +51,7 @@ See Monitor_funcs.py to change these default settings.
 """
 
 # call the scraping func
-links = scrape_results_page()[1]
-date_time = scrape_results_page()[2]
-prices = scrape_results_page()[3]
-featured = scrape_results_page()[4]
-
+_, links, date_time, prices, featured = scrape_results_page()
 
 ## 3. Data wrangling ----------------------------------------------------------
 # create date_time vars for the df
@@ -137,7 +133,7 @@ def plot(interval = "Month", stat = "median", incl_trend = True, incl_CI90 = Fal
 
         # add error bars
         yerr = np.transpose(np.array(full_df3[['90_CI']]))
-        if incl_CI90 == True: 
+        if incl_CI90: 
             ax.errorbar(full_df3[f'{interval}'].apply(lambda x: x.strftime('%d/%m')),full_df3['Price'][f'{stat}'], yerr=yerr, alpha = 0.5)
 
         # plot lines
@@ -149,7 +145,7 @@ def plot(interval = "Month", stat = "median", incl_trend = True, incl_CI90 = Fal
         
         # add error bars
         yerr = np.transpose(np.array(full_df3[['90_CI']]))
-        if incl_CI90 == True: 
+        if incl_CI90: 
             ax.errorbar(full_df3[f'{interval}'].astype(str),full_df3['Price'][f'{stat}'], yerr=yerr, alpha = 0.5)
 
         # plot lines
@@ -157,7 +153,7 @@ def plot(interval = "Month", stat = "median", incl_trend = True, incl_CI90 = Fal
             ax.plot(full_df3[f'{interval}'].astype(str),full_df3['Price'][f'{stat}'], color = 'b')
         
     # trend line
-    if incl_trend == True:
+    if incl_trend:
         xaxis = list(range(len(full_df3)))
         yaxis = list(full_df3['Price'][f'{stat}'])
         model = np.poly1d(np.polyfit(xaxis, yaxis, 3))
@@ -175,7 +171,7 @@ def plot(interval = "Month", stat = "median", incl_trend = True, incl_CI90 = Fal
     else: 
         plt.ylim([min(full_df3['Price'][f'{stat}'])- np.amax(yerr), max(full_df3['Price'][f'{stat}'])+np.amax(yerr)])
 
-    if save_fig == True:
+    if save_fig:
         plt.savefig(f'{location}/charts/{interval}/{today}_{interval}_{stat}_trend_{incl_trend}.png')
 
 # Plot the data
