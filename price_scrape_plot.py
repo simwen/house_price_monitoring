@@ -10,9 +10,14 @@ Created on Sun Nov  6 13:16:38 2022
 import pandas as pd
 import numpy as np
 from datetime import date, datetime, timedelta
-import matplotlib
 from matplotlib import pyplot as plt
 import math
+import sys 
+import os
+
+# import the scraping function
+sys.path.append(os.path.abspath('/Users/Sim/Documents/Other/Programming/Personal Projects/house_price_monitoring'))
+from monitor_funcs import scrape_results_page
 
 # file naming variables
 today = date.today()
@@ -21,21 +26,14 @@ location = '/Users/Sim/Documents/Other/Programming/Personal Projects/house_price
 #location2 = '/Users/Sim/Documents/Other/Programming/Personal Projects/house_price_monitoring/test'
 
 # Load last week's data (full data and summary stats)
-summary_df = pd.read_csv(f'{location}/data/summary_df_{last_version}.csv')
-full_df = pd.read_csv(f'{location}/data/full_df_{last_version}.csv')
-
-summary_df = summary_df.drop('Unnamed: 0', axis=1)
-full_df = full_df.drop('Unnamed: 0', axis=1)
+try:
+    summary_df = pd.read_csv(f'{location}/data/summary_df_{last_version}.csv')
+    full_df = pd.read_csv(f'{location}/data/full_df_{last_version}.csv')
+except FileNotFoundError:
+    print(f"The csv files full_df_{last_version} and summary_df_{last_version} don't exist. Either you have incorrectly specified last_version or there is no data yet (perhaps this is the first run?). If the latter, create blank dataframes to be populated.")
 
 
 ## 2. Scraping ----------------------------------------------------------------
-# import the scraping functions
-import sys 
-import os
-sys.path.append(os.path.abspath('/Users/Sim/Documents/Other/Programming/Personal Projects/house_price_monitoring'))
-
-from Monitor_funcs import scrape_results_page
-
 """
 The scraper is currently set to the following default settings:
 Scraping 2 bed properties posted in the last 7 days (to ensure they don't appear 
@@ -88,7 +86,7 @@ full_df_new['Date'] = full_df_new.Date.dt.strftime("%Y-%m-%d")
 full_df = pd.concat([full_df, full_df_new]).reset_index(drop=True)
 
 # Save full scrape to csv
-full_df.to_csv(f'{location}/data/full_df_{today}.csv') 
+full_df.to_csv(f'{location}/full_df_{today}.csv', index=False) 
 
 ## 4. Summary stats -----------------------------------------------------------
 # For summary stats df, first create empty dataframe for new data
@@ -111,7 +109,7 @@ ninety, st_dev = round(np.percentile(full_df_new['Price'], 90),2), round(np.std(
 # Combine and save new summary stats data
 summary_df2.loc[len(summary_df2)] = [date, avg_price, median_price, ten, ninety, st_dev, n]
 summary_df2 = pd.concat([summary_df, summary_df2]).reset_index(drop=True) # Combine this week's data with past weeks'
-summary_df2.to_csv(f'{location}/data/summary_df_{today}.csv') # Save summary df to csv
+summary_df2.to_csv(f'{location}/summary_df_{today}.csv', index=False) # Save summary df to csv
 
 
 ## 5. Creating charts ---------------------------------------------------------
@@ -176,8 +174,8 @@ def plot(interval = "Month", stat = "median", incl_trend = True, incl_CI90 = Fal
 
 # Plot the data
 # Possible intervals: 'Date', 'Year', 'Month', 'MonthYear', 'WeekNo', 'Fortnight'
-plot(interval = "Date", stat = "median", incl_trend=True, incl_CI90 = False, save_fig = True)
-plot(interval = "MonthYear", stat = "median", incl_trend=False, incl_CI90 = False, save_fig = True)
+#plot(interval = "Date", stat = "median", incl_trend=True, incl_CI90 = False, save_fig = True)
+#plot(interval = "MonthYear", stat = "median", incl_trend=False, incl_CI90 = False, save_fig = True)
 
 
 plot(interval = "MonthYear", stat = "median", incl_trend=False, incl_CI90 = False, save_fig = False)
