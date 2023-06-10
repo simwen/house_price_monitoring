@@ -26,17 +26,41 @@ areas = {
 
 
 def scrape_results_page(min_beds=2, max_beds=2, noPages=2, days_since_added=7):
-    apartment_links = []  # stores apartment links
-    prices = []  # stores the listing price of apartment
-    featured_listing = []  # stores 'featured' status of properties
-    datetime_listing = []  # stores date of scrape
+    '''
+    Returns the links, dates, prices, and featured status of scraped Rightmove 
+    properties based on user inputs.
+
+        Parameters:
+            min_beds (int): The min number of beds to consider (excludes properties with less)
+            max_beds (int): The max number of beds to consider (excludes properties with more)
+            noPages (int): The number of Rightmove pages to scrape per area (usually 25 properties per page)
+            days_since_added (int): The maximum number of days since listing to consider (excludes properties from longer ago)
+                    
+        Returns:
+            apartment_links (str): weblink to property
+            datetime_listing (str): date of scraping (today's date)
+            prices (int): listing price of property
+            featured_listing: whether the property appears as a 'featured property' on RightMove
+    '''
+    
+    apartment_links = []  
+    prices = []  
+    featured_listing = []  
+    datetime_listing = []  
 
     for area_key in areas:
         print(f"scraping {area_key}")
         for i in range(noPages):
             if i == 0:
+                url1 = ("https://www.rightmove.co.uk/property-for-sale/find.html?"
+                        f"locationIdentifier={area_key}&maxBedrooms={max_beds}&minBedrooms={min_beds}"
+                        f"&radius={areas[area_key]}&sortType=6&propertyTypes=detached%2Cflat%2Csemi-detached%2Cterraced"
+                        f"&maxDaysSinceAdded={days_since_added}&includeSSTC=false"
+                        f"&mustHave=&dontShow=&furnishTypes=&keywords="
+                        )
                 r = requests.get(
-                    f"https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier={area_key}&maxBedrooms={max_beds}&minBedrooms={min_beds}&radius={areas[area_key]}&sortType=6&propertyTypes=detached%2Cflat%2Csemi-detached%2Cterraced&maxDaysSinceAdded={days_since_added}&includeSSTC=false&mustHave=&dontShow=&furnishTypes=&keywords="
+                    url1
+                    #f"https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier={area_key}&maxBedrooms={max_beds}&minBedrooms={min_beds}&radius={areas[area_key]}&sortType=6&propertyTypes=detached%2Cflat%2Csemi-detached%2Cterraced&maxDaysSinceAdded={days_since_added}&includeSSTC=false&mustHave=&dontShow=&furnishTypes=&keywords="
                 )
             elif i > 0 and areas[area_key] < 1:
                 break  # usually 0.5 radius searches have only 1 page of properties
@@ -45,8 +69,14 @@ def scrape_results_page(min_beds=2, max_beds=2, noPages=2, days_since_added=7):
                 max_retry = 8
                 for retry in range(max_retry): # loop 8 times: break out loop if trying normal requests.get works, if error from too many requests then induce 8 increasingly lengthy sleeps until goes through, or fails
                     try:
+                        url2 = ("https://www.rightmove.co.uk/property-for-sale/find.html?"
+                                f"locationIdentifier={area_key}&maxBedrooms={max_beds}&minBedrooms={min_beds}"
+                                f"&radius={areas[area_key]}&sortType=6&index={i*24}"
+                                f"&propertyTypes=detached%2Cflat%2Csemi-detached%2Cterraced&maxDaysSinceAdded={days_since_added}"
+                                "&includeSSTC=false&mustHave=&dontShow=&furnishTypes=&keywords=")
                         r = requests.get(
-                            f"https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier={area_key}&maxBedrooms={max_beds}&minBedrooms={min_beds}&radius={areas[area_key]}&sortType=6&index={i*24}&propertyTypes=detached%2Cflat%2Csemi-detached%2Cterraced&maxDaysSinceAdded={days_since_added}&includeSSTC=false&mustHave=&dontShow=&furnishTypes=&keywords="
+                            url2
+                            #f"https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier={area_key}&maxBedrooms={max_beds}&minBedrooms={min_beds}&radius={areas[area_key]}&sortType=6&index={i*24}&propertyTypes=detached%2Cflat%2Csemi-detached%2Cterraced&maxDaysSinceAdded={days_since_added}&includeSSTC=false&mustHave=&dontShow=&furnishTypes=&keywords="
                         )
                         break
                     except requests.exceptions.ConnectionError:
