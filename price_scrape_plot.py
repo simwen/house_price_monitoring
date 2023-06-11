@@ -1,9 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Nov  6 13:16:38 2022
+RightMove price scraping script: price_scrape_plot.py
+(Created on Sun Nov 6 2022)
 
-@author: Sim
+This script allows the user to monitor property market prices in specific locations
+by scraping RightMove, storing the price data, then plotting the prices.
+
+
+This script requires that `pandas`, `numpy`, `matplotlib`, `requests` and `bs4` 
+to be installed within the Python environment you are running this script in.
+
+This script uses the following functions:
+
+    * scrape_results_page (from monitor_funcs.py): Returns the links, dates, prices, 
+    and featured status of scraped Rightmove properties based on user inputs.
+    * plot: Returns a property price plot using the scraped data based on the user-defined 
+    inputs.
+
 """
 
 ## 1. Set up ------------------------------------------------------------------
@@ -32,15 +46,10 @@ except FileNotFoundError:
 """
 The scraper is currently set to the following default settings:
 Scraping 2 bed properties posted in the last 7 days (to ensure they don't appear 
-in last week's scrape) in the 5 following non-overlapping areas defined by a 
-1 mile (or 0.5 mile) radius around the following tube stations:
-- Kentish Town (1 mile)
-- Royal Oak (1 mile)
-- Finchley Road (1 mile)
-- Angel (1 mile)
-- Mornington Crescent (0.5 miles)
+in last week's scrape) in the user-defined areas.
 
-See monitor_funcs.py to change these default settings.
+See function scrape_results_page in monitor_funcs.py fpr more info on the scraper 
+and to change the default settings.
 """
 
 # call the scraping func
@@ -64,7 +73,7 @@ full_df_new = pd.DataFrame.from_dict(data)
 
 # Remove featured properties
 full_df_new = full_df_new[full_df_new.Featured != 1]
-print(len(full_df_new))
+#print(len(full_df_new))
 
 # Sampling 120 rows
 full_df_new = full_df_new.sample(n=min(120, len(full_df_new)))
@@ -73,7 +82,6 @@ latest_scrape_sample = len(full_df_new)
 # Adding time variables
 full_df_new["Date"] = pd.to_datetime(full_df_new["DateScraped"])
 full_df_new["Year"] = full_df_new["Date"].dt.strftime("%Y")
-full_df_new["Month"] = full_df_new["Date"].dt.strftime("%m")
 full_df_new["MonthYear"] = full_df_new["Date"].dt.strftime("%Y-%m")
 full_df_new["WeekNo"] = full_df_new["Date"].dt.strftime("%U")
 full_df_new["Fortnight"] = (full_df_new["WeekNo"].astype(int) + 1) // 2
@@ -126,15 +134,25 @@ summary_df2.to_csv(Path("./data", f"summary_df_{today}.csv"), index=False)
 
 ## 5. Creating charts ---------------------------------------------------------
 # Plotting function
-def plot(
-    interval="Month",
-    stat="median",
-    incl_trend=True,
-    incl_CI90=False,
-    start="2022-11-06",
-    end="2024-11-06",
-    save_fig=False,
-):
+def plot(interval="Date", stat="median", incl_trend=True, incl_CI90=False,
+         start="2022-11-06", end="2024-11-06", save_fig=False):
+    """
+    Returns a property price plot using the scraped data based on the user-defined 
+    inputs.
+
+        Parameters:
+            interval (str): The time interval to use when plotting (e.g. Date, MonthYear etc.)
+            stat (str): The price stat to plot (e.g. mean, median)
+            incl_trend (bool): Whether to include a quadratic trend line
+            incl_CI90 (bool): Whether to include 90% confidence interval bars on each point
+            start (str): The starting date to consider
+            end (str): The final date to consider
+            save_fig (bool): Whether to locally save the plot
+                    
+        Returns:
+            Matplotlib plot of the user's desired plot
+    """
+    
     full_df3 = full_df[(full_df["Date"] >= start) & (full_df["Date"] <= end)]
     full_df3 = full_df3.groupby(f"{interval}").agg({"Price": ["mean", "median", "std", "count"]})
     full_df3 = full_df3.reset_index()
@@ -228,14 +246,14 @@ def plot(
 
 
 # Plot the data
-# Possible intervals: 'Date', 'Year', 'Month', 'MonthYear', 'WeekNo', 'Fortnight'
+# Possible intervals: 'Date', 'Year', 'MonthYear', 'Fortnight' (doesn't work)
 plot(interval="Date", stat="median", incl_trend=True, incl_CI90=False, save_fig=True)
 plot(interval="MonthYear", stat="median", incl_trend=False, incl_CI90=False, save_fig=True)
 
-
-plot(interval="MonthYear", stat="median", incl_trend=False, incl_CI90=False, save_fig=False)
+# Works: Date, Year, MonthYear
+# Not working: Fortnight
+plot(interval="WeekNo", stat="median", incl_trend=False, incl_CI90=False, save_fig=False)
 plot(interval="Date", stat="median", incl_trend=False, incl_CI90=False, save_fig=False)
 
 
-# Works: Date, Year, MonthYear
-# Doesn't: Fortnight, Month, WeekNo
+
