@@ -11,9 +11,6 @@ from bs4 import BeautifulSoup
 import time
 from datetime import datetime
 
-# Scraping the rightmove search results webpages
-# Collates valid properties' weblinks, price and id
-
 # Input here the area/station codes you're interested in, and the radius of the search in the form {area: radius}
 # Area and station codes can be found in the weblink of a rightmove property search
 areas = {
@@ -26,7 +23,7 @@ areas = {
 
 
 def scrape_results_page(min_beds=2, max_beds=2, noPages=2, days_since_added=7):
-    '''
+    """
     Returns the links, dates, prices, and featured status of scraped Rightmove 
     properties based on user inputs.
 
@@ -41,7 +38,7 @@ def scrape_results_page(min_beds=2, max_beds=2, noPages=2, days_since_added=7):
             datetime_listing (str): date of scraping (today's date)
             prices (int): listing price of property
             featured_listing: whether the property appears as a 'featured property' on RightMove
-    '''
+    """
     
     apartment_links = []  
     prices = []  
