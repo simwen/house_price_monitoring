@@ -26,6 +26,7 @@ import numpy as np
 from datetime import date, datetime, timedelta
 import matplotlib
 from matplotlib import pyplot as plt
+from matplotlib import lines
 import math
 from pathlib import Path
 from monitor_funcs import scrape_results_page # scraping function
@@ -131,7 +132,6 @@ summary_df2 = pd.concat([summary_df, summary_df2]).reset_index(drop=True)
 # Save summary df to csv
 summary_df2.to_csv(Path("./data", f"summary_df_{today}.csv"), index=False)
 
-
 ## 5. Creating charts ---------------------------------------------------------
 # Plotting function
 def plot(interval="Date", stat="median", incl_trend=True, incl_CI90=False,
@@ -158,17 +158,20 @@ def plot(interval="Date", stat="median", incl_trend=True, incl_CI90=False,
     full_df3 = full_df3.reset_index()
 
     full_df3["90_CI"] = 1.645 * (full_df3["Price"]["std"] / full_df3["Price"]["count"] ** 0.5)
-
+    
     fig, ax = plt.subplots()
 
     # plot points
     if interval == "Date":
+        
+        # plot points
         full_df3[f"{interval}"] = pd.to_datetime(full_df3[f"{interval}"])
         ax.plot(
             full_df3[f"{interval}"].apply(lambda x: x.strftime("%d/%m")),
             full_df3["Price"][f"{stat}"],
             ".",
-            color="b",
+            color="red",
+            alpha=0.25,
         )
         ax.set_xticks(ax.get_xticks()[:: math.ceil(len(full_df3) / 10)])
 
@@ -183,19 +186,22 @@ def plot(interval="Date", stat="median", incl_trend=True, incl_CI90=False,
             )
 
         # plot lines
-        if incl_trend == False:
+        if not incl_trend:
             ax.plot(
                 full_df3[f"{interval}"].apply(lambda x: x.strftime("%d/%m")),
                 full_df3["Price"][f"{stat}"],
-                color="b",
+                color="red",
             )
 
     else:
+        
+        # plot points
         ax.plot(
             full_df3[f"{interval}"].astype(str),
             full_df3["Price"][f"{stat}"],
             ".",
-            color="b",
+            color="red",
+            alpha=0.5
         )
 
         # add error bars
@@ -208,12 +214,12 @@ def plot(interval="Date", stat="median", incl_trend=True, incl_CI90=False,
                 alpha=0.5,
             )
 
-        # plot lines
-        if incl_trend == False:
+        # plot lines 
+        if not incl_trend:
             ax.plot(
                 full_df3[f"{interval}"].astype(str),
                 full_df3["Price"][f"{stat}"],
-                color="b",
+                color="red",
             )
 
     # trend line
@@ -222,24 +228,31 @@ def plot(interval="Date", stat="median", incl_trend=True, incl_CI90=False,
         yaxis = list(full_df3["Price"][f"{stat}"])
         model = np.poly1d(np.polyfit(xaxis, yaxis, 3))
         polyline = np.linspace(0, len(full_df3) - 1, 100)
-        ax.plot(polyline, model(polyline))
+        ax.plot(polyline, model(polyline), color = "red")
 
     # formatting
-    ax.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: "£{:,}".format(int(x), ",")))
+    ax.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: "£{}k".format(str(int(x))[:-3]) ))  
+    
     ax.yaxis.set_tick_params(which="major", labelcolor="black", labelleft=True)
+    ax.yaxis.set_ticks_position('none') 
+    
+    plt.ylabel(f"{stat} Price".capitalize(), size = 12)
+    plt.xlabel(f"{interval}", size = 12)
+    plt.grid(axis = "y", color = 'grey', alpha = 0.6)
+    plt.box(False)
+    plt.rcParams["font.family"] = "Arial"
 
-    plt.ylabel(f"{stat} price")
-    plt.xlabel(f"{interval}")
+    xmin, xmax = ax.get_xaxis().get_view_interval()   
     if interval == "Date":
-        plt.ylim(
-            [min(full_df3["Price"][f"{stat}"]) - np.amax(yerr) + 50000,
-             max(full_df3["Price"][f"{stat}"]) + np.amax(yerr) - 50000]
-        )
+        ymin = min(full_df3["Price"][f"{stat}"]) - np.amax(yerr) + 60000
+        ymax = max(full_df3["Price"][f"{stat}"]) + np.amax(yerr) - 60000
+        plt.ylim([ymin, ymax])
     else:
-        plt.ylim(
-            [min(full_df3["Price"][f"{stat}"]) - np.amax(yerr),
-             max(full_df3["Price"][f"{stat}"]) + np.amax(yerr)]
-        )
+        ymin = min(full_df3["Price"][f"{stat}"]) - np.amax(yerr)
+        ymax = max(full_df3["Price"][f"{stat}"]) + np.amax(yerr)
+        plt.ylim([ymin,ymax])
+    
+    ax.add_artist(lines.Line2D((xmin, xmax), (ymin+1000, ymin+1000), color='grey', linewidth=1))
 
     if save_fig:
         plt.savefig(Path("./charts", f"{interval}", f"{today}_{stat}_trend_{incl_trend}.png"))
@@ -247,13 +260,15 @@ def plot(interval="Date", stat="median", incl_trend=True, incl_CI90=False,
 
 # Plot the data
 # Possible intervals: 'Date', 'Year', 'MonthYear', 'Fortnight' (doesn't work)
+
+plot(interval="Date", stat="median", incl_trend=True, incl_CI90=False, save_fig=False)
+
 plot(interval="Date", stat="median", incl_trend=True, incl_CI90=False, save_fig=True)
 plot(interval="MonthYear", stat="median", incl_trend=False, incl_CI90=False, save_fig=True)
 
 # Works: Date, Year, MonthYear
 # Not working: Fortnight
 plot(interval="WeekNo", stat="median", incl_trend=False, incl_CI90=False, save_fig=False)
-plot(interval="Date", stat="median", incl_trend=False, incl_CI90=False, save_fig=False)
 
 
 
