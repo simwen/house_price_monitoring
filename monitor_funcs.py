@@ -103,9 +103,13 @@ def scrape_results_page(min_beds=2, max_beds=2, noPages=2, days_since_added=7):
                 prices.append(int(price.replace(",", "").replace("£", "")))
 
                 # append featured listing indicator
-                featured = apartment.find(
+                try:
+                    featured = apartment.find(
                     "div", class_="propertyCard-moreInfoFeaturedTitle"
-                ).get_text()
+                    ).get_text()
+                except AttributeError:
+                    print("No featured info - assumed not featured")
+                    featured = ""
                 if len(featured) > 0:
                     featured = 1
                 else:
