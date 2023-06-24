@@ -45,9 +45,8 @@ except FileNotFoundError:
 
 ## 2. Scraping ----------------------------------------------------------------
 """
-The scraper is currently set to the following default settings:
-Scraping 2 bed properties posted in the last 7 days (to ensure they don't appear 
-in last week's scrape) in the user-defined areas.
+The scraper is currently set to the default of scraping 2 bed properties posted 
+in the last 7 days in the user-defined areas.
 
 See function scrape_results_page in monitor_funcs.py fpr more info on the scraper 
 and to change the default settings.
@@ -61,7 +60,7 @@ _, links, date_time, prices, featured = scrape_results_page()
 date_time = pd.to_datetime(date_time, dayfirst=True, format="%d/%m/%Y %H:%M")
 dates = date_time.date
 
-# convert to dataframe
+# Convert to dataframe
 data = {
     "Links": links,
     "DateTimeScraped": date_time,
@@ -171,7 +170,7 @@ def plot(interval="Date", stat="median", incl_trend=True, incl_CI90=False,
             full_df3["Price"][f"{stat}"],
             ".",
             color="red",
-            alpha=0.25,
+            alpha=0.3,
         )
         ax.set_xticks(ax.get_xticks()[:: math.ceil(len(full_df3) / 10)])
 
@@ -238,18 +237,18 @@ def plot(interval="Date", stat="median", incl_trend=True, incl_CI90=False,
     
     plt.ylabel(f"{stat} Price".capitalize(), size = 12)
     plt.xlabel(f"{interval}", size = 12)
-    plt.grid(axis = "y", color = 'grey', alpha = 0.6)
+    plt.grid(axis = "y", color = 'grey', alpha = 0.4)
     plt.box(False)
     plt.rcParams["font.family"] = "Arial"
 
     xmin, xmax = ax.get_xaxis().get_view_interval()   
-    if interval == "Date":
-        ymin = min(full_df3["Price"][f"{stat}"]) - np.amax(yerr) + 60000
-        ymax = max(full_df3["Price"][f"{stat}"]) + np.amax(yerr) - 60000
+    if not incl_CI90:
+        ymin = min(full_df3["Price"][f"{stat}"]) - 30000
+        ymax = max(full_df3["Price"][f"{stat}"]) + 30000
         plt.ylim([ymin, ymax])
     else:
-        ymin = min(full_df3["Price"][f"{stat}"]) - np.amax(yerr)
-        ymax = max(full_df3["Price"][f"{stat}"]) + np.amax(yerr)
+        ymin = min(full_df3["Price"][f"{stat}"]) - np.amax(yerr) -5000
+        ymax = max(full_df3["Price"][f"{stat}"]) + np.amax(yerr) + 5000
         plt.ylim([ymin,ymax])
     
     ax.add_artist(lines.Line2D((xmin, xmax), (ymin+1000, ymin+1000), color='grey', linewidth=1))
@@ -261,14 +260,14 @@ def plot(interval="Date", stat="median", incl_trend=True, incl_CI90=False,
 # Plot the data
 # Possible intervals: 'Date', 'Year', 'MonthYear', 'Fortnight' (doesn't work)
 
+#plot(interval="Date", stat="median", incl_trend=False, end="2022-11-14", incl_CI90=False, save_fig=False)
+#plot(interval="Date", stat="median", incl_trend=False, end="2022-12-14", incl_CI90=False, save_fig=False)
 plot(interval="Date", stat="median", incl_trend=True, incl_CI90=False, save_fig=False)
 
-plot(interval="Date", stat="median", incl_trend=True, incl_CI90=False, save_fig=True)
 plot(interval="MonthYear", stat="median", incl_trend=False, incl_CI90=False, save_fig=True)
+plot(interval="Date", stat="median", incl_trend=True, incl_CI90=False, save_fig=True)
 
 # Works: Date, Year, MonthYear
 # Not working: Fortnight
-plot(interval="WeekNo", stat="median", incl_trend=False, incl_CI90=False, save_fig=False)
-
 
 
